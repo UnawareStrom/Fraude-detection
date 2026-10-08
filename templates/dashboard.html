@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Comprehensive fraud detection audit report with ML-powered analysis and visual analytics.">
+    <title>Fraud Scan Results | AI Fraud Detector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dashboard-body">
+    <nav class="navbar">
+        <div class="nav-brand">
+            <h2>AI Fraud <span>Detector</span></h2>
+            <span class="badge-statement">Audit Report</span>
+        </div>
+        <div class="nav-actions">
+            <a href="/" class="btn-secondary">← Upload Another Statement</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <header class="dash-header">
+            <h1>Statement <span>Audit Report</span></h1>
+            <p>Comprehensive fraud & anomaly detection scan powered by machine learning</p>
+        </header>
+
+        <!-- ─── KPI Metrics ────────────────────────────────────── -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">📄</div>
+                <h3>Total Transactions</h3>
+                <div class="value" data-count="{{ results.total_transactions }}">{{ results.total_transactions }}</div>
+                <p class="subtext">Uploaded records</p>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">🔍</div>
+                <h3>Processed</h3>
+                <div class="value" data-count="{{ results.cleaned_transactions }}">{{ results.cleaned_transactions }}</div>
+                <p class="subtext">Cleaned & normalized</p>
+            </div>
+            <div class="metric-card danger-card">
+                <div class="metric-icon">⚠️</div>
+                <h3>Flagged Suspicious</h3>
+                <div class="value danger" data-count="{{ results.flagged_count }}">{{ results.flagged_count }}</div>
+                <p class="subtext">{{ results.flagged_percent }}% fraud rate</p>
+            </div>
+            <div class="metric-card danger-card">
+                <div class="metric-icon">💰</div>
+                <h3>At-Risk Value</h3>
+                <div class="value danger">{{ results.total_suspicious_amount }}</div>
+                <p class="subtext">Total flagged exposure</p>
+            </div>
+        </section>
+
+        <!-- ─── Top Flagged Transactions Table ─────────────────── -->
+        {% if results.top_suspicious and results.top_suspicious|length > 0 %}
+        <section class="table-section">
+            <div class="section-title-wrap">
+                <h2>All Transactions</h2>
+                <span class="badge-pill">{{ results.top_suspicious|length }} transactions · Sorted by Risk</span>
+            </div>
+            <div class="table-wrapper" style="max-height: 520px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            {% for key in results.top_suspicious[0].keys() %}
+                            <th>{{ key }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in results.top_suspicious %}
+                        <tr>
+                            {% for key, val in row.items() %}
+                            <td>
+                                {% if key == 'Risk Level' %}
+                                    {% if val == 'HIGH' %}
+                                    <span class="badge-risk high">HIGH</span>
+                                    {% elif val == 'MEDIUM' %}
+                                    <span class="badge-risk medium">MEDIUM</span>
+                                    {% else %}
+                                    <span class="badge-risk low">LOW</span>
+                                    {% endif %}
+                                {% elif key == 'Risk (%)' %}
+                                    <span class="risk-score {% if val >= 60 %}risk-high{% elif val >= 25 %}risk-medium{% else %}risk-low{% endif %}">
+                                        {{ val }}%
+                                    </span>
+                                {% else %}
+                                    {{ val }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ─── Visual Analytics ───────────────────────────────── -->
+        <section class="plots-section">
+            <div class="plot-card">
+                <div class="card-header">
+                    <h2>Risk Breakdown</h2>
+                    <span class="card-tag">Distribution</span>
+                </div>
+                <img src="{{ url_for('static', filename='plots/plot1_overview.png') }}" alt="Overview Distribution" loading="lazy">
+            </div>
+
+            <div class="plot-card">
+                <div class="card-header">
+                    <h2>Activity Volume vs Suspicious Count</h2>
+                    <span class="card-tag">Category Breakdown</span>
+                </div>
+                <img src="{{ url_for('static', filename='plots/plot2_location_risk.png') }}" alt="Category Breakdown" loading="lazy">
+            </div>
+
+        </section>
+    </div>
+
+    <script>
+        // Animate numeric metric values counting up
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.metric-card .value[data-count]').forEach(el => {
+                const raw = el.getAttribute('data-count').replace(/,/g, '');
+                const target = parseInt(raw, 10);
+                if (isNaN(target)) return;
+
+                const duration = 1200;
+                const startTime = performance.now();
+
+                el.textContent = '0';
+
+                function tick(now) {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    // Ease-out cubic
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const current = Math.round(eased * target);
+                    el.textContent = current.toLocaleString();
+
+                    if (progress < 1) requestAnimationFrame(tick);
+                }
+
+                requestAnimationFrame(tick);
+            });
+
+            // Intersection observer for plot cards — fade in when visible
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+
+            document.querySelectorAll('.plot-card').forEach(card => {
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>

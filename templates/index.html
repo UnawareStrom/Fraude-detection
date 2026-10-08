@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Upload your bank statement and detect fraudulent transactions instantly with AI-powered analysis.">
+    <title>AI Fraud Detector | Bank Statement Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="index-body">
+    <div class="blob-bg"></div>
+
+    <!-- ─── Full-Screen Preloader ─────────────────────────────── -->
+    <div class="preloader-overlay" id="preloaderOverlay">
+        <div class="preloader-spinner">
+            <div class="ring"></div>
+            <div class="ring"></div>
+            <div class="ring"></div>
+            <div class="core-dot"></div>
+        </div>
+        <div class="preloader-text">Scanning Statement<span class="preloader-dots"></span></div>
+        <div class="preloader-sub" id="preloaderStatus">Parsing transactions & running ML inference</div>
+        <div class="preloader-progress"><div class="bar"></div></div>
+    </div>
+
+    <!-- ─── Navbar ────────────────────────────────────────────── -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <h2>AI Fraud <span>Detector</span></h2>
+            <span class="badge-statement">Financial Security Engine</span>
+        </div>
+        <div class="nav-actions">
+            <a href="/demo" class="btn-secondary nav-demo-btn" id="demoBtn">
+                <span>⚡ Try Demo Statement</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- ─── Main Content ──────────────────────────────────────── -->
+    <main class="page-main">
+        <div class="hero-section">
+            <div class="hero-badge">
+                <span class="pulse-dot"></span>
+                Machine Learning Inference Engine
+            </div>
+            <h1>Detect Financial <span>Fraud</span> Instantly</h1>
+            <p class="hero-subtitle">
+                Upload your personal or business bank statement in CSV format. 
+                Our AI analyzes patterns, timing anomalies, and transaction outliers to flag suspicious activity.
+            </p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="alert-container">
+              {% for message in messages %}
+                <div class="alert">
+                    <span class="alert-icon">⚠️</span>
+                    <span>{{ message }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="upload-card">
+            <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+                <div class="drop-zone" id="dropZone">
+                    <div class="upload-icon-wrapper">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h3>Drag & Drop your Bank Statement</h3>
+                    <p class="drop-help">CSV, Excel (.xlsx), TSV, or TXT files up to 50 MB</p>
+                    <span class="browse-chip">or Browse Files</span>
+                    <input type="file" name="file" id="fileInput" accept=".csv,.tsv,.txt,.xlsx,.xls" required>
+                </div>
+                
+                <div class="file-details" id="fileDetails" style="display: none;">
+                    <div class="file-info-left">
+                        <span class="file-icon">📊</span>
+                        <div class="file-text-wrap">
+                            <span class="file-name" id="fileName">statement.csv</span>
+                            <span class="file-ready-tag">Ready for scanning</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-text-change" id="changeFileBtn">Change</button>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" id="submitBtn" disabled>
+                        <span id="submitText">Scan Statement for Fraud</span>
+                        <div class="spinner" id="spinner" style="display: none;"></div>
+                    </button>
+                </div>
+            </form>
+
+            <div class="sample-prompt">
+                <span>Don't have a CSV handy?</span>
+                <a href="/demo" class="sample-link" id="demoLink">Run with 1-Year Sample Bank Statement →</a>
+            </div>
+        </div>
+
+        <!-- Feature strip -->
+        <div class="features-strip">
+            <div class="feature-item">
+                <div class="feat-icon">🧠</div>
+                <span>ML-Powered Detection</span>
+            </div>
+            <div class="feature-item">
+                <div class="feat-icon">📊</div>
+                <span>Visual Analytics</span>
+            </div>
+            <div class="feature-item">
+                <div class="feat-icon">🔒</div>
+                <span>Local Processing</span>
+            </div>
+            <div class="feature-item">
+                <div class="feat-icon">⚡</div>
+                <span>Instant Results</span>
+            </div>
+        </div>
+
+        <footer class="index-footer">
+            <p>🔒 <strong>Secure & Local:</strong> Your financial data is parsed locally and never stored or shared.</p>
+        </footer>
+    </main>
+
+    <script>
+        const dropZone    = document.getElementById('dropZone');
+        const fileInput   = document.getElementById('fileInput');
+        const fileDetails = document.getElementById('fileDetails');
+        const fileName    = document.getElementById('fileName');
+        const changeBtn   = document.getElementById('changeFileBtn');
+        const submitBtn   = document.getElementById('submitBtn');
+        const submitText  = document.getElementById('submitText');
+        const uploadForm  = document.getElementById('uploadForm');
+        const spinner     = document.getElementById('spinner');
+        const preloader   = document.getElementById('preloaderOverlay');
+        const preStatus   = document.getElementById('preloaderStatus');
+        const demoBtn     = document.getElementById('demoBtn');
+        const demoLink    = document.getElementById('demoLink');
+
+        // Drop zone interactions
+        dropZone.addEventListener('click', () => fileInput.click());
+        changeBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                updateFileDisplay();
+            }
+        });
+
+        fileInput.addEventListener('change', updateFileDisplay);
+
+        function updateFileDisplay() {
+            if (fileInput.files && fileInput.files.length > 0) {
+                fileName.textContent = fileInput.files[0].name;
+                fileDetails.style.display = 'flex';
+                submitBtn.disabled = false;
+                dropZone.classList.add('file-selected');
+            }
+        }
+
+        // Preloader status messages
+        const statusMessages = [
+            'Parsing transactions & running ML inference',
+            'Cleaning & normalizing column formats',
+            'Encoding categorical features',
+            'Running anomaly detection model',
+            'Generating visual analytics charts',
+            'Compiling audit report'
+        ];
+
+        function cycleStatus() {
+            let idx = 0;
+            return setInterval(() => {
+                idx = (idx + 1) % statusMessages.length;
+                preStatus.style.opacity = '0';
+                setTimeout(() => {
+                    preStatus.textContent = statusMessages[idx];
+                    preStatus.style.opacity = '1';
+                }, 200);
+            }, 2200);
+        }
+
+        // Upload form submission → show preloader
+        uploadForm.addEventListener('submit', () => {
+            submitText.textContent = 'Scanning…';
+            spinner.style.display = 'inline-block';
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+            preloader.classList.add('active');
+            preStatus.style.transition = 'opacity .2s ease';
+            cycleStatus();
+        });
+
+        // Demo links → show preloader
+        function showDemoPreloader(e) {
+            preloader.classList.add('active');
+            preStatus.textContent = 'Loading 1-year sample statement';
+            preStatus.style.transition = 'opacity .2s ease';
+            cycleStatus();
+        }
+
+        demoBtn.addEventListener('click', showDemoPreloader);
+        demoLink.addEventListener('click', showDemoPreloader);
+    </script>
+</body>
+</html>
