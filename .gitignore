@@ -6,4 +6,3 @@ venv/
 env/
 .DS_Store
 static/plots/
-streamlit_app.py

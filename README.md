@@ -9,7 +9,7 @@ Protect your finances with this Bank Statement Fraud Detection tool. Simply uplo
 - **Detailed Reporting:** Get a tabular breakdown of the top most suspicious transactions, including exact amounts and flags.
 
 ## 🛠️ Built With
-- **Backend:** Flask, Python
+- **Backend/Frontend:** Streamlit, Python
 - **Data & ML:** Pandas, NumPy, Scikit-learn
 - **Visualization:** Matplotlib, Seaborn
 - **Frontend:** HTML, CSS (Vanilla)
@@ -35,16 +35,15 @@ pip install -r requirements.txt
 
 ### 4. Start the Application
 ```bash
-python app.py
+streamlit run streamlit_app.py
 ```
-Then, navigate to `http://127.0.0.1:5000` in your web browser.
+Then, navigate to the local URL provided in your terminal (usually `http://localhost:8501`).
 
-## 🌐 Deployment (Render.com)
-To deploy this application to production on Render:
-1. Make sure `gunicorn` is in your `requirements.txt`.
-2. Connect your GitHub repository to Render as a "Web Service".
-3. Use the build command: `pip install -r requirements.txt`
-4. Use the start command: `gunicorn app:app`
+## 🌐 Deployment (Streamlit Community Cloud or Render)
+To deploy this application:
+1. Make sure `streamlit` is in your `requirements.txt`.
+2. Connect your GitHub repository to Streamlit Community Cloud (easiest) or Render as a "Web Service".
+3. Use the start command: `streamlit run streamlit_app.py`
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
